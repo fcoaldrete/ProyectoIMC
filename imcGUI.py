@@ -2,13 +2,16 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import imc
 import imcDB
+import subprocess
+import os
+import psutil
 
 class GUI:
     def __init__(self):
         self.__ventana = tk.Tk()
         self.__ventana.title("Calculadora de IMC")
         self.__ventana.configure(bg="#E8F0FE")
-        self.__ventana.geometry("500x500")
+        self.__ventana.geometry("500x550")
         self.__ventana.resizable(False, False)
 
         fuente = ("Segoe UI", 10)
@@ -63,17 +66,24 @@ class GUI:
         )
         self.__scale_peso.grid(row=4, column=1, sticky="w", pady=5)
 
-        # Fila 5: Botones
+        # Fila 5: Botones principales
         ttk.Button(self.__ventana, text="Calcular IMC", command=self.__calcular).grid(row=5, column=0, pady=10, padx=5)
         ttk.Button(self.__ventana, text="Limpiar", command=self.__limpiar).grid(row=5, column=1, padx=5, sticky="w")
 
-        # Fila 6: LabelFrame del resumen
+        # Fila 6: Resumen
         self.__resumen = tk.LabelFrame(self.__ventana, text="Resultado", font=("Segoe UI", 9, "bold"),
                                        bg="#F7FBFF", padx=10, pady=10)
         self.__resumen.grid(row=6, column=0, columnspan=2, pady=10, padx=10, sticky="ew")
         self.__resumen.grid_remove()
 
         tk.Label(self.__resumen, textvariable=self.__info, justify="left", bg="#F7FBFF", font=("Segoe UI", 9)).pack()
+
+        # Fila 7: Botones extra
+        marco_extra = ttk.Frame(self.__ventana)
+        marco_extra.grid(row=7, column=0, columnspan=2, pady=10)
+
+        ttk.Button(marco_extra, text="Ver Registros", command=self.__abrir_catalogo).pack(side="left", padx=10)
+        ttk.Button(marco_extra, text="Cerrar", command=self.__confirmar_cierre).pack(side="right", padx=10)
 
         self.__centrar_ventana()
 
@@ -150,6 +160,28 @@ class GUI:
         self.__spin_edad.config(state="disabled")
         self.__scale_estatura.config(state="disabled")
         self.__scale_peso.config(state="disabled")
+
+    def __abrir_catalogo(self):
+        if not self.__catalogo_ya_abierto("catalogoIMC.py"):
+            try:
+                subprocess.Popen(["python", "catalogoIMC.py"])
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo abrir el catálogo:\n{str(e)}")
+        else:
+            messagebox.showinfo("Atención", "El catálogo ya está abierto.")
+
+    def __catalogo_ya_abierto(self, nombre_script):
+        for p in psutil.process_iter(['pid', 'name', 'cmdline']):
+            try:
+                if any(nombre_script in str(c) for c in p.info['cmdline']):
+                    return True
+            except Exception:
+                continue
+        return False
+
+    def __confirmar_cierre(self):
+        if messagebox.askyesno("Confirmar salida", "¿Deseas cerrar la aplicación?"):
+            self.__ventana.destroy()
 
 # Ejecución directa
 if __name__ == "__main__":
